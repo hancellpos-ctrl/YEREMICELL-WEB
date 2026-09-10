@@ -1,0 +1,89 @@
+{
+  "services": [
+    {
+      "type": "web",
+      "runtime": "static",
+      "name": "yeremicell",
+      "repo": "https://github.com/hancellpos-ctrl/YEREMICELL-WEB",
+      "branch": "main",
+      "autoDeployTrigger": "off",
+      "buildCommand": "node build.mjs",
+      "staticPublishPath": "dist",
+      "envVars": [
+        {
+          "key": "SKIP_INSTALL_DEPS",
+          "value": "true"
+        }
+      ],
+      "routes": [
+        {
+          "type": "rewrite",
+          "source": "/api/*",
+          "destination": "https://yeremicell.wpgaming94.chatgpt.site/api/*"
+        },
+        {
+          "type": "rewrite",
+          "source": "/media/*",
+          "destination": "https://yeremicell.wpgaming94.chatgpt.site/media/*"
+        },
+        {
+          "type": "rewrite",
+          "source": "/producto/*",
+          "destination": "https://yeremicell.wpgaming94.chatgpt.site/producto/*"
+        },
+        {
+          "type": "rewrite",
+          "source": "/admin",
+          "destination": "/admin.html"
+        },
+        {
+          "type": "rewrite",
+          "source": "/descargar-catalogo",
+          "destination": "https://yeremicell.wpgaming94.chatgpt.site/descargar-catalogo"
+        }
+      ],
+      "headers": [
+        {
+          "path": "/*",
+          "name": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "path": "/*",
+          "name": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "path": "/*",
+          "name": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "path": "/*",
+          "name": "Content-Security-Policy",
+          "value": "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        },
+        {
+          "path": "/api/*",
+          "name": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "path": "/admin*",
+          "name": "X-Robots-Tag",
+          "value": "noindex"
+        },
+        {
+          "path": "/admin*",
+          "name": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "path": "/YEREMICELL-CLIENTE.html",
+          "name": "Content-Disposition",
+          "value": "attachment; filename=\"YEREMICELL-CLIENTE.html\""
+        }
+      ]
+    }
+  ]
+}
