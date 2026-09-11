@@ -1,12 +1,13 @@
 import {money} from './shared.js';
 
 export const orderKey=(id,colorId='')=>colorId?`${id}~${colorId}`:id;
-export const productAvailable=p=>p.status==='available'&&(!p.colors?.length||p.colors.some(c=>c.quantity!==0));
+export const colorAvailable=c=>c.status!=='soldout'&&c.quantity!==0;
+export const productAvailable=p=>p.status==='available'&&(!p.colors?.length||p.colors.some(colorAvailable));
 export function resolveOrderItem(key,products){
  const [id,colorId]=key.split('~'),product=products.find(p=>p.id===id);
  if(!product||!productAvailable(product))return null;
  const color=product.colors?.find(c=>c.id===colorId)||null;
- if(product.colors?.length?!color||color.quantity===0:Boolean(colorId))return null;
+ if(product.colors?.length?!color||!colorAvailable(color):Boolean(colorId))return null;
  return {key,product,color,maxQuantity:Math.min(99,color?.quantity??99)};
 }
 

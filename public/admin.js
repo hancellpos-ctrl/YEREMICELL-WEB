@@ -1,4 +1,5 @@
 import {$,esc,icon,logo,money,api,toast,share} from './shared.js';
+import {productAvailable,colorAvailable} from './order.js';
 import {preparePhoto} from './photo-upload.js';
 for(const id of ['login-brand','admin-brand'])$('#'+id).innerHTML=logo();document.querySelectorAll('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon));
 let products=[],settings={},editing=null,images=[],uploading=false,saving=false,dirty=false,deleteId=null;
@@ -13,11 +14,12 @@ $('#logout').onclick=async()=>{try{await api('/api/logout',{method:'POST'});logg
 $('#mobile-logout').onclick=()=>$('#logout').click();
 $('#admin-share').onclick=()=>share(location.origin,'YEREMICELL · Catálogo de teléfonos');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));for(const tab of ['products','settings','security'])$('#'+tab+'-section').hidden=tab!==b.dataset.tab;$('#section-name').textContent=b.textContent.trim()});
+const catalogStatus=p=>p.status==='available'&&!productAvailable(p)?'soldout':p.status;
 function render(){
  const query=$('#admin-search').value.toLowerCase(),status=$('#admin-status').value;
- const rows=products.filter(p=>(p.name+' '+p.brand+' '+p.storage).toLowerCase().includes(query)&&(!status||(status==='no-photo'?!p.images.length:p.status===status)));
- $('#stats').innerHTML=[['Total de productos',products.length,'phone'],['En catálogo',products.filter(p=>p.status==='available').length,'grid'],['Destacados',products.filter(p=>p.featured).length,'check'],['Pendientes de foto',products.filter(p=>!p.images.length).length,'image']].map(([label,n,i])=>`<div class="stat"><span>${label}${icon(i)}</span><strong>${n}</strong></div>`).join('');
- $('#admin-products').innerHTML=rows.length?rows.map(p=>`<tr><td><div class="table-product"><div class="table-photo">${p.images.length?`<img src="${esc(p.images[0])}" alt="" loading="lazy">`:icon('phone')}</div><div><strong>${esc(p.name)}</strong><small>${esc(p.brand)} · ${esc(p.storage)}${p.featured?' · Destacado':''}</small>${!p.images.length?'<span class=missing-photo>Sin fotos</span>':''}</div></div></td><td><b>${money(p.price)}</b></td><td><span class="table-status ${p.status}">${{available:'En catálogo',soldout:'Agotado',hidden:'Oculto'}[p.status]}</span></td><td>${p.images.length} / 6</td><td><div class="table-actions"><button class="icon-button" data-edit="${p.id}" aria-label="Editar ${esc(p.name)} ${esc(p.storage)}">${icon('edit')}<span>Editar</span></button><button class="icon-button delete-button" data-delete="${p.id}" aria-label="Eliminar ${esc(p.name)} ${esc(p.storage)}">${icon('trash')}</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="admin-empty">No hay productos con estos filtros.</td></tr>';
+ const rows=products.filter(p=>(p.name+' '+p.brand+' '+p.storage).toLowerCase().includes(query)&&(!status||(status==='no-photo'?!p.images.length:catalogStatus(p)===status)));
+ $('#stats').innerHTML=[['Total de productos',products.length,'phone'],['Disponibles',products.filter(productAvailable).length,'grid'],['Destacados',products.filter(p=>p.featured).length,'check'],['Pendientes de foto',products.filter(p=>!p.images.length).length,'image']].map(([label,n,i])=>`<div class="stat"><span>${label}${icon(i)}</span><strong>${n}</strong></div>`).join('');
+ $('#admin-products').innerHTML=rows.length?rows.map(p=>`<tr><td><div class="table-product"><div class="table-photo">${p.images.length?`<img src="${esc(p.images[0])}" alt="" loading="lazy">`:icon('phone')}</div><div><strong>${esc(p.name)}</strong><small>${esc(p.brand)} · ${esc(p.storage)}${p.featured?' · Destacado':''}</small>${!p.images.length?'<span class=missing-photo>Sin fotos</span>':''}</div></div></td><td><b>${money(p.price)}</b></td><td><span class="table-status ${catalogStatus(p)}">${{available:'Disponible',soldout:'Agotado',hidden:'Oculto'}[catalogStatus(p)]}</span></td><td>${p.images.length} / 6</td><td><div class="table-actions"><button class="icon-button" data-edit="${p.id}" aria-label="Editar ${esc(p.name)} ${esc(p.storage)}">${icon('edit')}<span>Editar</span></button><button class="icon-button delete-button" data-delete="${p.id}" aria-label="Eliminar ${esc(p.name)} ${esc(p.storage)}">${icon('trash')}</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="admin-empty">No hay productos con estos filtros.</td></tr>';
  $('#table-count').textContent=`${rows.length} de ${products.length} productos`;
  $('#brands-list').innerHTML=[...new Set(products.map(p=>p.brand))].map(b=>`<option>${esc(b)}</option>`).join('');
 }
@@ -105,10 +107,17 @@ $('#password-form').onsubmit=async e=>{e.preventDefault();const raw=Object.fromE
 $('#export-products').onclick=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),products,settings},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='YEREMICELL-catalogo-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Respaldo descargado.')};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});boot();
 
-function readColors(){return [...document.querySelectorAll('.color-row')].map(row=>({id:row.dataset.colorId,name:row.querySelector('[data-color-name]').value,quantity:row.querySelector('[data-color-quantity]').value}))}
+function readColors(){return [...document.querySelectorAll('.color-row')].map(row=>({id:row.dataset.colorId,name:row.querySelector('[data-color-name]').value,quantity:row.querySelector('[data-color-quantity]').value,status:row.querySelector('[data-color-status]').value}))}
 function renderColors(colors){
- $('#color-rows').innerHTML=colors.map((c,i)=>`<div class="color-row" data-color-id="${esc(c.id)}"><label>Color<input data-color-name aria-label="Color ${i+1}" maxlength="40" placeholder="Ej.: Negro" value="${esc(c.name)}" list="color-names"></label><label>Cantidad <small>Opcional</small><input data-color-quantity aria-label="Cantidad del color ${i+1}" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="Sin indicar" value="${esc(c.quantity??'')}"></label><button type="button" class="icon-button" data-remove-color aria-label="Quitar color ${i+1}">${icon('trash')}</button></div>`).join('');
+ $('#color-rows').innerHTML=colors.map((c,i)=>`<div class="color-row" data-color-id="${esc(c.id)}"><label class="color-name">Color<input data-color-name aria-label="Color ${i+1}" maxlength="40" placeholder="Ej.: Negro" value="${esc(c.name)}" list="color-names"></label><button type="button" class="icon-button" data-remove-color aria-label="Quitar color ${i+1}">${icon('trash')}</button><label class="color-status">Estado<select data-color-status aria-label="Estado del color ${i+1}"><option value="available" ${colorAvailable(c)?'selected':''}>Disponible</option><option value="soldout" ${!colorAvailable(c)?'selected':''}>Agotado</option></select></label><label class="color-quantity">Cantidad <small>Opcional</small><input data-color-quantity aria-label="Cantidad del color ${i+1}" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="Sin indicar" value="${esc(c.quantity??'')}"></label></div>`).join('');
  $('#add-color').disabled=colors.length>=20;
 }
 $('#add-color').onclick=()=>{const colors=readColors();if(colors.length>=20)return;colors.push({id:crypto.randomUUID(),name:'',quantity:''});renderColors(colors);dirty=true;$('#color-rows .color-row:last-child [data-color-name]').focus()};
 $('#color-rows').onclick=e=>{const remove=e.target.closest('[data-remove-color]');if(!remove)return;const id=remove.closest('.color-row').dataset.colorId;renderColors(readColors().filter(c=>c.id!==id));dirty=true};
+
+$('#color-rows').addEventListener('input',e=>{
+ const row=e.target.closest('.color-row');if(!row)return;
+ const quantity=row.querySelector('[data-color-quantity]'),status=row.querySelector('[data-color-status]');
+ if(e.target===quantity&&quantity.value!==''&&Number(quantity.value)===0)status.value='soldout';
+ if(e.target===status&&status.value==='available'&&quantity.value!==''&&Number(quantity.value)===0)quantity.value='';
+});
