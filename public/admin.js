@@ -2,14 +2,14 @@ import {$,esc,icon,logo,money,api,toast,share} from './shared.js';
 import {productAvailable,colorAvailable} from './order.js';
 import {framePhoto} from './photo-cropper.js';
 for(const id of ['login-brand','admin-brand'])$('#'+id).innerHTML=logo();document.querySelectorAll('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon));
-let products=[],settings={},editing=null,images=[],uploading=false,saving=false,dirty=false,deleteId=null;
+let products=[],settings={},editing=null,images=[],uploading=false,saving=false,dirty=false,deleteId=null,authAttempt=0;
 const editor=$('#editor'),form=$('#product-form');
 const error=(id,message)=>{const el=$('#'+id);el.textContent=message;el.hidden=!message};
-function loggedOut(){ $('#login-screen').hidden=false;$('#admin-screen').hidden=true;$('#password').value='';if(editor.open)editor.close();dirty=false;products=[]; }
-async function boot(){try{if((await api('/api/session')).authenticated)await enter();else loggedOut()}catch(e){error('login-error',e.message)}}
+function loggedOut(clearPassword=true){ $('#login-screen').hidden=false;$('#admin-screen').hidden=true;if(clearPassword)$('#password').value='';if(editor.open)editor.close();dirty=false;products=[]; }
+async function boot(){const attempt=authAttempt;try{const session=await api('/api/session');if(attempt!==authAttempt)return;if(session.authenticated)await enter();else loggedOut(false)}catch(e){if(attempt===authAttempt)error('login-error',e.message)}}
 async function enter(){const [p,c]=await Promise.all([api('/api/admin/products'),api('/api/catalog')]);products=p;settings=c.settings;$('#login-screen').hidden=true;$('#admin-screen').hidden=false;error('login-error','');for(const [key,value] of Object.entries(settings)){const field=$('#settings-form').elements.namedItem(key);if(field)field.value=value}render()}
 $('#show-password').onchange=e=>$('#password').type=e.target.checked?'text':'password';
-$('#login-form').onsubmit=async e=>{e.preventDefault();const button=$('button[type=submit]',e.target);button.disabled=true;error('login-error','');try{await api('/api/login',{method:'POST',body:JSON.stringify({password:$('#password').value})});await enter()}catch(e){error('login-error',e.message)}finally{button.disabled=false}};
+$('#login-form').onsubmit=async e=>{e.preventDefault();authAttempt++;const button=$('button[type=submit]',e.target);button.disabled=true;error('login-error','');try{await api('/api/login',{method:'POST',body:JSON.stringify({password:$('#password').value})});await enter()}catch(e){error('login-error',e.message)}finally{button.disabled=false}};
 $('#logout').onclick=async()=>{try{await api('/api/logout',{method:'POST'});loggedOut();toast('Sesión cerrada')}catch(e){toast(e.message)}};
 $('#mobile-logout').onclick=()=>$('#logout').click();
 $('#admin-share').onclick=()=>share(location.origin,'YEREMICELL · Catálogo de teléfonos');
