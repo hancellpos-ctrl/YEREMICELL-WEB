@@ -33,7 +33,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .benefits strong{font-size:11px;line-height:1.5}.benefits small{font-size:10px;line-height:1.5;margin-top:2px}
   .benefits .icon{width:23px;height:23px}
   .catalog-section{padding-top:28px;padding-bottom:30px}
-  .section-heading{margin-bottom:18px}.section-heading h2{font-size:27px;line-height:1.2;max-width:340px;letter-spacing:-1px;margin-top:9px}
+  .section-heading{margin-bottom:18px}.section-heading h1{font-size:27px;line-height:1.2;max-width:340px;letter-spacing:-1px;margin-top:9px}
   .muted{font-size:9px;letter-spacing:1.4px}
   .brand-tabs{gap:8px;padding-bottom:17px;scrollbar-width:none;overscroll-behavior-x:contain}.brand-tabs::-webkit-scrollbar{display:none}
   .brand-tab{min-height:46px;padding:11px 15px;font-size:14px;gap:9px;border-radius:9px}.brand-tab small{font-size:11px}
