@@ -24,7 +24,7 @@ function encode(canvas,type,quality) {
   return new Promise((resolve,reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('No pudimos preparar la foto.')),type,quality));
 }
 
-export async function preparePhoto(file, onProgress = () => {}) {
+export async function readPhoto(file, onProgress = () => {}) {
   if(!file.size) throw new Error('La foto está vacía. Selecciona otra imagen.');
   if(file.size > MAX_SOURCE_BYTES) throw new Error('Selecciona fotos de hasta 30 MB.');
   const heic = await isHeic(file);
@@ -55,10 +55,21 @@ export async function preparePhoto(file, onProgress = () => {}) {
     if(!ctx) throw new Error('No pudimos preparar la foto en este navegador.');
     ctx.fillStyle = '#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(decoded,0,0,canvas.width,canvas.height);
+    return canvas;
+  } catch(error) {canvas.width=1;canvas.height=1;throw error;}
+  finally {decoded.src='';}
+}
+
+export async function encodePhoto(canvas,name='foto') {
     let blob = await encode(canvas,'image/webp',0.84);
     if(blob.type !== 'image/webp') blob = await encode(canvas,'image/jpeg',0.84);
     if(blob.size > MAX_UPLOAD_BYTES) throw new Error('La foto sigue siendo demasiado grande. Selecciona una versión más pequeña.');
     const extension = blob.type === 'image/webp' ? 'webp' : 'jpg';
-    return new File([blob],file.name.replace(/\.[^.]+$/,'') + '.' + extension,{type:blob.type});
-  } finally {canvas.width=1;canvas.height=1;decoded.src='';}
+    return new File([blob],name.replace(/\.[^.]+$/,'') + '.' + extension,{type:blob.type});
+}
+
+export async function preparePhoto(file,onProgress=()=>{}) {
+  const canvas=await readPhoto(file,onProgress);
+  try {return await encodePhoto(canvas,file.name);}
+  finally {canvas.width=1;canvas.height=1;}
 }

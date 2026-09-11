@@ -1,6 +1,6 @@
 import {$,esc,icon,logo,money,api,toast,share} from './shared.js';
 import {productAvailable,colorAvailable} from './order.js';
-import {preparePhoto} from './photo-upload.js';
+import {framePhoto} from './photo-cropper.js';
 for(const id of ['login-brand','admin-brand'])$('#'+id).innerHTML=logo();document.querySelectorAll('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon));
 let products=[],settings={},editing=null,images=[],uploading=false,saving=false,dirty=false,deleteId=null;
 const editor=$('#editor'),form=$('#product-form');
@@ -74,16 +74,18 @@ $('#choose-photos').onclick=()=>$('#image-upload').click();
 async function uploadPhotos(e){
  const files=[...e.target.files];if(!files.length)return;
  if(files.length+images.length>6){error('editor-error','Puedes subir hasta 6 fotos por artículo.');e.target.value='';return}
- uploading=true;photos();saveState();error('editor-error','');
+ uploading=true;photos();saveState();error('editor-error','');let added=0;
  try{
   for(let i=0;i<files.length;i++){
-   const file=await preparePhoto(files[i],message=>$('#upload-status').textContent=`Foto ${i+1} de ${files.length}: ${message}`);
-   $('#upload-status').textContent=`Subiendo foto ${i+1} de ${files.length}…`;
-   const data=await api('/api/admin/upload',{method:'POST',headers:{'Content-Type':file.type},body:file});images.push(data.url);dirty=true;photos();
+   const data=await framePhoto(files[i],{index:i+1,total:files.length,onProgress:message=>$('#upload-status').textContent=`Foto ${i+1} de ${files.length}: ${message}`,onConfirm:async file=>{
+    $('#upload-status').textContent=`Subiendo foto ${i+1} de ${files.length}…`;
+    return api('/api/admin/upload',{method:'POST',headers:{'Content-Type':file.type},body:file});
+   }});
+   if(data){images.push(data.url);added++;dirty=true;photos()}
   }
-  $('#upload-status').textContent='Fotos listas. Guarda el artículo para terminar.';
- }catch(e){error('editor-error',e.message);$('#upload-status').textContent=images.length?'Las fotos que ya subiste se conservan.':''}
- finally{uploading=false;e.target.value='';photos();saveState()}
+  $('#upload-status').textContent=added?'Fotos listas. Guarda el artículo para terminar.':'No se añadieron fotos.';
+ }catch(e){if(e.name!=='AbortError')error('editor-error',e.message);$('#upload-status').textContent=added?'Las fotos que ya subiste se conservan.':e.name==='AbortError'?'Selección cancelada.':''}
+ finally{uploading=false;e.target.value='';photos();saveState();$('#choose-photos').focus({preventScroll:true})}
 }
 $('#image-upload').onchange=uploadPhotos;$('#camera-upload').onchange=uploadPhotos;
 form.onsubmit=async e=>{

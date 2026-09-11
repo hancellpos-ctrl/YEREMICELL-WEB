@@ -18,7 +18,7 @@
         </div>
         <input type="file" id="image-upload" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple hidden>
         <input type="file" id="camera-upload" accept="image/*,.heic,.heif" capture="environment" hidden>
-        <p class="photo-help">Hasta 6 fotos. La primera será la portada.</p>
+        <p class="photo-help">Hasta 6 fotos. Podrás encuadrarlas antes de subirlas. La primera será la portada.</p>
         <p id="upload-status" role="status" aria-live="polite"></p>
       </section>
       <div class="product-fields">
@@ -50,4 +50,15 @@
       <div><button type="button" class="btn" id="cancel-edit">Cancelar</button><button type="submit" class="btn primary" id="save-product"><span id="save-label">Publicar artículo</span> <span data-icon="check"></span></button></div>
     </div>
   </form>
+</dialog>
+<dialog id="photo-cropper" aria-labelledby="crop-title">
+  <header class="crop-header"><div><span id="crop-counter">Antes de subir</span><h2 id="crop-title">Encuadrar foto</h2></div><button type="button" class="icon-button" id="crop-close" aria-label="Cancelar selección" autofocus><span data-icon="close"></span></button></header>
+  <div class="crop-body">
+    <div class="crop-workspace"><div id="crop-frame"><canvas id="crop-preview" tabindex="0" role="img" aria-label="Vista previa del encuadre" aria-describedby="crop-help crop-keyboard"></canvas></div></div>
+    <p id="crop-help">Arrastra la foto y pellizca para ampliar.</p><span class="sr-only" id="crop-keyboard">También puedes usar las flechas para mover la foto y los controles de zoom.</span>
+    <div class="crop-formats" role="group" aria-label="Formato de la foto"><button type="button" data-crop-format="original" aria-pressed="true">Completa</button><button type="button" data-crop-format="square" aria-pressed="false">Cuadrada</button><button type="button" data-crop-format="portrait" aria-pressed="false">Vertical</button></div>
+    <label class="crop-zoom-label" for="crop-zoom">Zoom <output id="crop-zoom-value" for="crop-zoom">1.0×</output></label><input id="crop-zoom" type="range" min="1" max="4" step="0.01" value="1">
+    <div class="crop-actions"><button type="button" class="btn" id="crop-rotate"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></svg> Girar</button><button type="button" class="btn" id="crop-reset">Restablecer</button></div>
+  </div>
+  <footer class="crop-footer"><p id="crop-error" class="error" role="alert" hidden></p><div><button type="button" class="btn" id="crop-skip">Cancelar</button><button type="button" class="btn primary" id="crop-confirm">Usar foto</button></div></footer>
 </dialog><dialog id="delete-dialog" aria-labelledby="delete-title"><h2 id="delete-title">¿Eliminar este producto?</h2><p id="delete-description"></p><p>Dejará de aparecer en tu catálogo. También puedes ocultarlo desde el editor.</p><div class="delete-actions"><button class="btn" id="cancel-delete">Conservar producto</button><button class="btn danger" id="confirm-delete">Eliminar producto</button></div></dialog><div id="toast" role="status"></div></body></html>
