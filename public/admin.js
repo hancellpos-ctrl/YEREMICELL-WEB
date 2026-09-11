@@ -47,7 +47,7 @@ window.visualViewport?.addEventListener('scroll',fitEditor);
 window.addEventListener('resize',fitEditor);
 function openEditor(id){
  editing=id?products.find(p=>p.id===id):null;form.reset();images=editing?[...editing.images]:[];dirty=false;
- $('#product-details').open=false;error('editor-error','');$('#upload-status').textContent='';
+ $('#product-details').open=false;$('#color-details').open=false;renderColors(editing?.colors||[]);error('editor-error','');$('#upload-status').textContent='';
  $('#editor-title').textContent=editing?'Editar artículo':'Nuevo artículo';
  if(editing)for(const [k,v] of Object.entries(editing)){const el=form.elements.namedItem(k);if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v??''}}
  photos();saveState();editor.showModal();document.body.style.overflow='hidden';fitEditor();$('.editor-content').scrollTop=0;
@@ -61,7 +61,7 @@ editor.addEventListener('close',()=>document.body.style.overflow='');
 $('#new-product').onclick=()=>openEditor();$('#close-editor').onclick=closeEditor;$('#cancel-edit').onclick=closeEditor;
 editor.addEventListener('cancel',e=>{e.preventDefault();closeEditor()});form.addEventListener('input',()=>dirty=true);
 form.elements.status.onchange=saveState;
-form.addEventListener('invalid',e=>{if(e.target.closest('details'))$('#product-details').open=true},true);
+form.addEventListener('invalid',e=>{if(e.target.closest('details'))e.target.closest('details').open=true},true);
 document.addEventListener('click',e=>{
  const edit=e.target.closest('[data-edit]');if(edit)openEditor(edit.dataset.edit);
  const del=e.target.closest('[data-delete]');if(del){deleteId=del.dataset.delete;const p=products.find(x=>x.id===deleteId);$('#delete-description').textContent=`${p.brand} ${p.name} · ${p.storage} · ${money(p.price)}`;$('#delete-dialog').showModal()}
@@ -87,7 +87,9 @@ $('#image-upload').onchange=uploadPhotos;$('#camera-upload').onchange=uploadPhot
 form.onsubmit=async e=>{
  e.preventDefault();if(uploading||saving)return;error('editor-error','');
  const raw=Object.fromEntries(new FormData(form));
- const data={...raw,name:raw.name.trim(),brand:raw.brand.trim()||'Otros',storage:raw.storage.trim()||'Consultar',price:raw.price===''?null:Number(raw.price),featured:form.elements.featured.checked,images:[...images]};
+ const colors=readColors().filter(c=>c.name.trim()||c.quantity!=='').map(c=>({...c,name:c.name.trim(),quantity:c.quantity===''?null:Number(c.quantity)}));
+ if(colors.some(c=>!c.name)){error('editor-error','Escribe el nombre de cada color.');$('#color-details').open=true;return}
+ const data={...raw,colors,name:raw.name.trim(),brand:raw.brand.trim()||'Otros',storage:raw.storage.trim()||'Consultar',price:raw.price===''?null:Number(raw.price),featured:form.elements.featured.checked,images:[...images]};
  if(!data.name){error('editor-error','Escribe el nombre del artículo.');form.elements.name.focus();return}
  saving=true;saveState();photos();
  try{
@@ -102,3 +104,11 @@ $('#settings-form').onsubmit=async e=>{e.preventDefault();const button=$('button
 $('#password-form').onsubmit=async e=>{e.preventDefault();const raw=Object.fromEntries(new FormData(e.target));error('password-error','');if(raw.password!==raw.confirm){error('password-error','Las contraseñas nuevas no coinciden.');return}const button=$('button[type=submit]',e.target);button.disabled=true;try{await api('/api/admin/password',{method:'PUT',body:JSON.stringify(raw)});e.target.reset();loggedOut();toast('Contraseña actualizada. Inicia sesión con tu nueva contraseña.')}catch(e){error('password-error',e.message)}finally{button.disabled=false}};
 $('#export-products').onclick=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),products,settings},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='YEREMICELL-catalogo-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Respaldo descargado.')};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});boot();
+
+function readColors(){return [...document.querySelectorAll('.color-row')].map(row=>({id:row.dataset.colorId,name:row.querySelector('[data-color-name]').value,quantity:row.querySelector('[data-color-quantity]').value}))}
+function renderColors(colors){
+ $('#color-rows').innerHTML=colors.map((c,i)=>`<div class="color-row" data-color-id="${esc(c.id)}"><label>Color<input data-color-name aria-label="Color ${i+1}" maxlength="40" placeholder="Ej.: Negro" value="${esc(c.name)}" list="color-names"></label><label>Cantidad <small>Opcional</small><input data-color-quantity aria-label="Cantidad del color ${i+1}" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="Sin indicar" value="${esc(c.quantity??'')}"></label><button type="button" class="icon-button" data-remove-color aria-label="Quitar color ${i+1}">${icon('trash')}</button></div>`).join('');
+ $('#add-color').disabled=colors.length>=20;
+}
+$('#add-color').onclick=()=>{const colors=readColors();if(colors.length>=20)return;colors.push({id:crypto.randomUUID(),name:'',quantity:''});renderColors(colors);dirty=true;$('#color-rows .color-row:last-child [data-color-name]').focus()};
+$('#color-rows').onclick=e=>{const remove=e.target.closest('[data-remove-color]');if(!remove)return;const id=remove.closest('.color-row').dataset.colorId;renderColors(readColors().filter(c=>c.id!==id));dirty=true};
