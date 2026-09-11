@@ -31,7 +31,7 @@ export function summarizeOrder(selection,products){
  return {items,quantity,totalCents,unknownQuantity,knownQuantity:quantity-unknownQuantity};
 }
 
-export function whatsappOrder(summary,phone,origin){
+export function whatsappOrder(summary,phone){
  const clean=value=>String(value).replace(/\s+/g,' ').trim();
  if(!summary.items.length)return {message:'',url:null};
  const lines=['Hola, me interesan estos artículos de YEREMICELL:',''];
@@ -39,7 +39,7 @@ export function whatsappOrder(summary,phone,origin){
   lines.push(`${i+1}. ${quantity} × ${clean(p.brand)} ${clean(p.name)} · ${clean(p.storage)}${p.condition!=='Consultar'?' · '+clean(p.condition):''}`);
   if(color)lines.push(`Color: ${clean(color.name)}`);
   lines.push(lineCents===null?'Precio por consultar':`${money(p.price)} c/u · ${money(lineCents/100)}`);
-  lines.push(`${origin}/producto/${encodeURIComponent(p.id)}`,'');
+  lines.push('');
  });
  lines.push(`Total estimado: ${summary.knownQuantity?money(summary.totalCents/100):'Por consultar'}`);
  if(summary.unknownQuantity&&summary.knownQuantity)lines.push(`Más ${summary.unknownQuantity} ${summary.unknownQuantity===1?'unidad con precio':'unidades con precio'} por consultar.`);
